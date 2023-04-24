@@ -1,10 +1,10 @@
 {
     "manifest_version": 3,
-    "name": "Notify",
-    "version": "0.1.0",
-    "description": "Extension to receive popup notifications",
+    "name": "Notifications",
+    "version": "0.1.1",
+    "description": "Extension to receive notifications from EVMs",
     "icons": {
-        "48": "icons/icon48.png"
+        "48": "icons/notification_icon.png"
     },
     "background": {
         "service_worker": "background.js",

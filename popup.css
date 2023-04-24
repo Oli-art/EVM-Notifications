@@ -32,13 +32,27 @@ body {
   padding: 20px;
 }
 
+.app2 {
+  height: 100%;
+  display: flex;
+  align-items: left;
+  justify-content: left;
+  flex-direction: column;
+  text-align: center;
+  padding: 20px;
+}
+
 .title {
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 10px;
 }
 
-.subtitle {
+.subject {
+  font-size: 14px;
+}
+
+.body {
   font-size: 12px;
 }
 

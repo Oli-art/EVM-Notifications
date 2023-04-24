@@ -1,10 +1,10 @@
 import * as ethers from './node_modules/ethers/dist/ethers.min.js';
 
- chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'MESSAGE_CHECK') {
         // Log message coming from the `request` parameter
         let block_nr = request.payload.lastBlock;
-        let newMessages = startListeningForBroadcastMsgEvents(1071, block_nr);
+        let newMessages = getLatestBroadcastMsgEvents(1071, block_nr);
         console.log(request.payload.lastBlock);
         // Send a response message
         Promise.resolve(newMessages).then(result => sendResponse(result));
@@ -30,44 +30,51 @@ function getProviderUrlForNetwork(network) {
     }
 }
 
-async function startListeningForBroadcastMsgEvents(network, block_nr) {
+const BLOCKS_TO_SCAN = 999;
+
+async function getLatestBroadcastMsgEvents(network, block_nr) {
+    const {last_block_number} = await chrome.storage.sync.get("last_block_number");
+    console.log('last block number ' + last_block_number);
+    if (last_block_number) {
+        block_nr = last_block_number;
+    }
+    console.log('current block number ' + block_nr);
+
+    // create a provider for the network selected
     const url = getProviderUrlForNetwork(network);
     if (!url) {
         console.error(`Invalid network ID: ${network}`);
         return;
     }
     const provider = new ethers.JsonRpcProvider(url);
-    let interfaceABI = await fetch(chrome.runtime.getURL('./interfaceABI.json'))
+
+    // find the events
+    const BroadcastMsgs = [];
+    let abi = await fetch(chrome.runtime.getURL('./interfaceABI.json'))
         .then(response => response.json())
         .catch(err => console.error(err));
-    const eventsByName = {};
 
-    // loop through all contracts and find the ones that implement the interface
-    const accounts = await provider.listAccounts();
-    
-    const deployedContracts = await Promise.all(
-        accounts.map(async (account) => {
-            const deployedContracts = await provider.getLogs({
-                fromBlock: block_nr,
-                toBlock: "latest",
-                address: account,
-                topics: [ethers.utils.id(interfaceABI)]
+    for(let i = 0; i < contractWhitelist.length; i++) {
+        const contract = new ethers.Contract(contractWhitelist[i], abi, provider);
+        // Get filter for BroadcastMsg events
+        const eventFilter = contract.filters.BroadcastMsg(null, null);
+        // Get logs for BroadcastMsg events
+        const logs = await contract.queryFilter(eventFilter, block_nr, block_nr + BLOCKS_TO_SCAN);
+
+        console.log(logs[0] != undefined);
+
+        if (logs[0] != undefined) {
+            // change last block scanned
+            chrome.storage.sync.set({"last_block_number": block_nr + BLOCKS_TO_SCAN}, function() {
+                console.log('storage set for new last block number' + logs[0].blockNumber);
             });
-    
-            return deployedContracts.map((c) => new ethers.Contract(c.address, interfaceABI, provider));
-        })
-    ).then((deployedContracts) => deployedContracts.flat());
-
-    // listen to the "BroadcastMsg" events in each contract that implements the interface
-    deployedContracts.forEach((contract) => {
-        if (contract.provider.network.chainId.toString() === network) {
-            const broadcastMsgEvent = contract.filters.BroadcastMsg();
-            eventsByName[broadcastMsgEvent] = broadcastMsgEvent;
-            contract.on(broadcastMsgEvent, (result) => {
-                console.log(result);
+            // Add logs to BroadcastMsgEvents array
+            BroadcastMsgs.push({
+                "subject": logs[0].args[1],
+                "body": logs[0].args[2]
             });
         }
-    });
-    console.log(eventsByName);
-    return "hi";
-}  
+    }
+
+    return BroadcastMsgs;
+}
