@@ -1,0 +1,22 @@
+{
+    "manifest_version": 3,
+    "name": "Notify",
+    "version": "0.1.0",
+    "description": "Extension to receive popup notifications",
+    "icons": {
+        "48": "icons/icon48.png"
+    },
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
+    "action": {
+        "default_title": "Notify",
+        "default_popup": "popup.html"
+    },
+    "permissions": [
+        "notifications",
+        "activeTab",
+        "storage"
+    ]
+}
