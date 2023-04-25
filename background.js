@@ -1,19 +1,25 @@
 import * as ethers from './node_modules/ethers/dist/ethers.min.js';
 
+/////////////////////// INPUTS ///////////////////////
+const contractWhitelist = ["0x3DA9CF0223FE2d41C002b6886A56a71404E1588e"]; // Array of contract addresses that will be listened to
+const BLOCKS_TO_SCAN = 999; // Number of blocks to scan starting from the latest block scanned the last time
+
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'MESSAGE_CHECK') {
         // Log message coming from the `request` parameter
-        let block_nr = request.payload.lastBlock;
-        let newMessages = getLatestBroadcastMsgEvents(1071, block_nr);
-        console.log(request.payload.lastBlock);
+        let minBlock = request.payload.minBlock;
+        let newMessages = getLatestBroadcastMsgEvents(1071, minBlock);
         // Send a response message
         Promise.resolve(newMessages).then(result => sendResponse(result));
         return true;
     }
+    else if (request.type === 'LAST_BLOCK') {
+        let response = chrome.storage.sync.get("last_block_scanned");
+        Promise.resolve(response).then(result => sendResponse(result));
+        return true;
+    }
 });
-
-// Array of contract addresses that will be listened to
-const contractWhitelist = ["0x3DA9CF0223FE2d41C002b6886A56a71404E1588e"];
 
 function getProviderUrlForNetwork(network) {
     switch (network) {
@@ -30,15 +36,12 @@ function getProviderUrlForNetwork(network) {
     }
 }
 
-const BLOCKS_TO_SCAN = 999;
-
 async function getLatestBroadcastMsgEvents(network, block_nr) {
-    const {last_block_number} = await chrome.storage.sync.get("last_block_number");
-    console.log('last block number ' + last_block_number);
-    if (last_block_number) {
-        block_nr = last_block_number;
+    // get the block number to later start the scan from and store it in "block_nr"
+    const {last_block_scanned} = await chrome.storage.sync.get("last_block_scanned");
+    if (last_block_scanned && last_block_scanned > block_nr) {
+        block_nr = last_block_scanned;
     }
-    console.log('current block number ' + block_nr);
 
     // create a provider for the network selected
     const url = getProviderUrlForNetwork(network);
@@ -48,6 +51,13 @@ async function getLatestBroadcastMsgEvents(network, block_nr) {
     }
     const provider = new ethers.JsonRpcProvider(url);
 
+    // calculate how many blocks to scan. Maximum is "BLOCKS_TO_SCAN" but will be lower if there are no more blocks.
+    const provider_block = await provider.getBlockNumber();
+    let blocks_to_scan = BLOCKS_TO_SCAN; // default
+    if (provider_block - block_nr < BLOCKS_TO_SCAN) { // if there are less blocks left than "BLOCKS_TO_SCAN", change it.
+        blocks_to_scan = provider_block - block_nr
+    }
+
     // find the events
     const BroadcastMsgs = [];
     let abi = await fetch(chrome.runtime.getURL('./interfaceABI.json'))
@@ -55,25 +65,29 @@ async function getLatestBroadcastMsgEvents(network, block_nr) {
         .catch(err => console.error(err));
 
     for(let i = 0; i < contractWhitelist.length; i++) {
+        // Define the contract to scan for
         const contract = new ethers.Contract(contractWhitelist[i], abi, provider);
+
         // Get filter for BroadcastMsg events
         const eventFilter = contract.filters.BroadcastMsg(null, null);
-        // Get logs for BroadcastMsg events
-        const logs = await contract.queryFilter(eventFilter, block_nr, block_nr + BLOCKS_TO_SCAN);
 
-        console.log(logs[0] != undefined);
+        // Get logs for BroadcastMsg events
+        const logs = await contract.queryFilter(eventFilter, block_nr, block_nr + blocks_to_scan);
 
         if (logs[0] != undefined) {
-            // change last block scanned
-            chrome.storage.sync.set({"last_block_number": block_nr + BLOCKS_TO_SCAN}, function() {
-                console.log('storage set for new last block number' + logs[0].blockNumber);
-            });
             // Add logs to BroadcastMsgEvents array
             BroadcastMsgs.push({
                 "subject": logs[0].args[1],
                 "body": logs[0].args[2]
             });
-        }
+        } 
+
+        // change last block scanned
+        const new_block_nr = block_nr + blocks_to_scan;
+        chrome.storage.sync.set({"last_block_scanned": new_block_nr}, function() {
+            console.log('storage set for new last block number: ' + new_block_nr);
+        });
+        
     }
 
     return BroadcastMsgs;
