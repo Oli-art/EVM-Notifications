@@ -1,15 +1,15 @@
 import * as ethers from './node_modules/ethers/dist/ethers.min.js';
 
 /////////////////////// INPUTS ///////////////////////
-const contractWhitelist = ["0x3DA9CF0223FE2d41C002b6886A56a71404E1588e"]; // Array of contract addresses that will be listened to
-const BLOCKS_TO_SCAN = 999; // Number of blocks to scan starting from the latest block scanned the last time
+const contractWhitelist = ["0x4fe74cA9baef81b330E931F5D4A14C0Fd18f8aD3"]; // Array of contract addresses that will be listened to
+const BLOCKS_TO_SCAN = 99; // Number of blocks to scan starting from the latest block scanned the last time
 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'MESSAGE_CHECK') {
         // Log message coming from the `request` parameter
         let minBlock = request.payload.minBlock;
-        let newMessages = getLatestBroadcastMsgEvents(1071, minBlock);
+        let newMessages = getLatestBroadcastMsgEvents("11155111", minBlock);
         // Send a response message
         Promise.resolve(newMessages).then(result => sendResponse(result));
         return true;
@@ -24,15 +24,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 function getProviderUrlForNetwork(network) {
     switch (network) {
         case "1": // Ethereum Mainnet
-        return "https://eth.llamarpc.com";
+            return "https://eth.llamarpc.com";
         case "3": // Ropsten Testnet
-        return "https://rpc.ankr.com/eth_ropsten";
+            return "https://rpc.ankr.com/eth_ropsten";
         case "4": // Rinkeby Testnet
-        return "https://rpc.ankr.com/eth_rinkeby";
+            return "https://rpc.ankr.com/eth_rinkeby";
+        case "5": // Goearli Testnet
+            return "https://eth-goerli.public.blastapi.io";
         case "1071": // Kovan Testnet
-        return "https://json-rpc.evm.testnet.shimmer.network";
+            return "https://json-rpc.evm.testnet.shimmer.network";
+        case "11155111": // Sepolia Testnet
+            return "https://eth-sepolia-public.unifra.io";
         default:
-        return "https://json-rpc.evm.testnet.shimmer.network";
+            return "https://json-rpc.evm.testnet.shimmer.network";
     }
 }
 
@@ -72,6 +76,7 @@ async function getLatestBroadcastMsgEvents(network, block_nr) {
         const eventFilter = contract.filters.BroadcastMsg(null, null);
 
         // Get logs for BroadcastMsg events
+        console.log(block_nr, block_nr + blocks_to_scan, provider_block)
         const logs = await contract.queryFilter(eventFilter, block_nr, block_nr + blocks_to_scan);
 
         if (logs[0] != undefined) {
@@ -92,3 +97,4 @@ async function getLatestBroadcastMsgEvents(network, block_nr) {
 
     return BroadcastMsgs;
 }
+

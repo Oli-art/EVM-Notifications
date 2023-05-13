@@ -16,9 +16,9 @@
 			},
 			{
 				"indexed": false,
-				"internalType": "string",
+				"internalType": "bytes[]",
 				"name": "body",
-				"type": "string"
+				"type": "bytes[]"
 			}
 		],
 		"name": "BroadcastMsg",
@@ -47,9 +47,9 @@
 			},
 			{
 				"indexed": false,
-				"internalType": "string",
+				"internalType": "bytes[]",
 				"name": "body",
-				"type": "string"
+				"type": "bytes[]"
 			}
 		],
 		"name": "DirectMsg",
@@ -63,9 +63,9 @@
 				"type": "string"
 			},
 			{
-				"internalType": "string",
+				"internalType": "bytes[]",
 				"name": "body",
-				"type": "string"
+				"type": "bytes[]"
 			}
 		],
 		"name": "contractBroadcast",
@@ -86,9 +86,9 @@
 				"type": "string"
 			},
 			{
-				"internalType": "string",
+				"internalType": "bytes[]",
 				"name": "body",
-				"type": "string"
+				"type": "bytes[]"
 			}
 		],
 		"name": "contractDM",
@@ -104,14 +104,14 @@
 				"type": "string"
 			},
 			{
-				"internalType": "string",
+				"internalType": "bytes[]",
 				"name": "body",
-				"type": "string"
+				"type": "bytes[]"
 			}
 		],
 		"name": "walletBroadcast",
 		"outputs": [],
-		"stateMutability": "payable",
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -127,14 +127,14 @@
 				"type": "string"
 			},
 			{
-				"internalType": "string",
+				"internalType": "bytes[]",
 				"name": "body",
-				"type": "string"
+				"type": "bytes[]"
 			}
 		],
 		"name": "walletDM",
 		"outputs": [],
-		"stateMutability": "payable",
+		"stateMutability": "nonpayable",
 		"type": "function"
 	}
 ]

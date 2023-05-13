@@ -4,7 +4,7 @@
     "version": "0.1.1",
     "description": "Extension to receive notifications from EVMs",
     "icons": {
-        "48": "icons/notification_icon.png"
+        "48": "icons/EVMnotifications.png"
     },
     "background": {
         "service_worker": "background.js",

@@ -2,6 +2,8 @@ let info = document.getElementById("info");
 let newestMessages = document.getElementsByName("newestMessages");
 let last_block = document.getElementById("last_block");
 
+const SCAN_BLOCK_START = 3475592;
+
 function updateLastBlock() {
     chrome.runtime.sendMessage(
         {
@@ -26,7 +28,7 @@ document.getElementById("check_messages").onclick = async () => {
         {
             type: 'MESSAGE_CHECK',
             payload: {
-                minBlock: 761437,
+                minBlock: SCAN_BLOCK_START,
             },
         },
         async (response) => {
